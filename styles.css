@@ -1,0 +1,173 @@
+html {
+  color-scheme: dark;
+}
+
+body {
+  background:
+    radial-gradient(circle at top left, rgba(16, 185, 129, 0.22), transparent 28%),
+    radial-gradient(circle at 85% 15%, rgba(251, 191, 36, 0.2), transparent 24%),
+    radial-gradient(circle at 50% 100%, rgba(59, 130, 246, 0.12), transparent 32%),
+    linear-gradient(180deg, #050505 0%, #090b10 52%, #070707 100%);
+  color: #f4f4f5;
+  font-family: Consolas, monospace;
+}
+
+body.reveal-good {
+  background:
+    radial-gradient(circle at top left, rgba(34, 197, 94, 0.2), transparent 30%),
+    radial-gradient(circle at 82% 18%, rgba(59, 130, 246, 0.15), transparent 26%),
+    linear-gradient(180deg, #07110a 0%, #0a1310 48%, #050607 100%);
+}
+
+body.reveal-bad {
+  background:
+    radial-gradient(circle at top left, rgba(251, 146, 60, 0.18), transparent 30%),
+    radial-gradient(circle at 82% 18%, rgba(168, 85, 247, 0.14), transparent 26%),
+    linear-gradient(180deg, #120a06 0%, #101014 48%, #050607 100%);
+}
+
+button {
+  -webkit-tap-highlight-color: transparent;
+}
+
+#lessonGrid button {
+  position: relative;
+  overflow: hidden;
+}
+
+#lessonGrid button::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: 0.18;
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.45), rgba(245, 158, 11, 0.35));
+  pointer-events: none;
+}
+
+#lessonGrid button:nth-child(2n)::before {
+  background: linear-gradient(135deg, rgba(14, 165, 233, 0.45), rgba(168, 85, 247, 0.42));
+}
+
+.lesson-card-green {
+  background: linear-gradient(145deg, rgba(16, 185, 129, 0.24), rgba(10, 18, 14, 0.78));
+}
+
+.lesson-card-sky {
+  background: linear-gradient(145deg, rgba(14, 165, 233, 0.24), rgba(9, 14, 22, 0.8));
+}
+
+.card-revealed {
+  background:
+    radial-gradient(circle at top, rgba(16, 185, 129, 0.16), transparent 32%),
+    radial-gradient(circle at 85% 15%, rgba(251, 191, 36, 0.12), transparent 26%),
+    linear-gradient(145deg, rgba(12, 18, 26, 0.95), rgba(6, 10, 16, 0.92));
+  box-shadow: 0 30px 120px rgba(0, 0, 0, 0.45);
+}
+
+#cardButton:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.2);
+  outline-offset: 4px;
+}
+
+#goodButton,
+#badButton {
+  font-size: 1.2rem;
+}
+
+@media (min-width: 640px) {
+  #goodButton,
+  #badButton {
+    font-size: 1.45rem;
+  }
+}
+
+.lesson-card-content {
+  animation: cardIn 280ms ease-out both;
+}
+
+.reveal-in {
+  animation: revealIn 220ms ease-out both;
+}
+
+.button-pop {
+  animation: buttonPop 220ms ease-out both;
+}
+
+.stat-pop {
+  animation: statPop 300ms cubic-bezier(.22,.9,.28,1) both;
+}
+
+@media (max-width: 640px) {
+  #lessonView,
+  #summaryView {
+    width: 100%;
+  }
+
+  #cardButton {
+    min-height: 82vh;
+    border-radius: 0;
+  }
+
+  #answerPanel {
+    width: 100%;
+    padding-top: 0.5rem;
+  }
+
+  #goodButton,
+  #badButton {
+    width: min(15rem, 100%);
+    margin-inline: auto;
+  }
+}
+
+@keyframes cardIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes revealIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes buttonPop {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.96);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes statPop {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.hidden {
+  display: none !important;
+}
