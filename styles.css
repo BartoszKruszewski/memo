@@ -12,9 +12,25 @@
   --lesson-from: #7c5cff;
   --lesson-to: #ff6bcb;
   --lesson-glow: rgba(124, 92, 255, 0.35);
-  --font-app: 'Bricolage Grotesque', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --space-shell: 1.2rem;
-  --space-block: 1rem;
+  --font-app: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --space-shell: 1.85rem;
+  --space-block: 1.45rem;
+  --radius-button: 0.9rem;
+  --answer-btn-height: clamp(6.75rem, 22vw, 8.75rem);
+}
+
+.ios-haptic-switch,
+.ios-haptic-switch-input {
+  position: fixed;
+  left: 0;
+  bottom: 0;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  opacity: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  pointer-events: none;
 }
 
 *,
@@ -27,6 +43,9 @@ html {
   color-scheme: dark;
   height: 100%;
   -webkit-text-size-adjust: 100%;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
 body {
@@ -37,6 +56,10 @@ body {
   overscroll-behavior: none;
   touch-action: manipulation;
   font-family: var(--font-app);
+  font-optical-sizing: auto;
+  font-synthesis: none;
+  font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  font-variation-settings: 'opsz' 32;
   color: var(--text);
   background: var(--app-bg);
   -webkit-tap-highlight-color: transparent;
@@ -294,14 +317,14 @@ body:has(.app-bg.feedback-bad) .flashcard {
 
 .app-header {
   flex: 0 0 auto;
-  margin-bottom: 1.35rem;
+  margin-bottom: 1.55rem;
 }
 
 .app-eyebrow,
 .summary-eyebrow {
   margin: 0;
   font-family: var(--font-app);
-  font-size: 0.78rem;
+  font-size: 1rem;
   font-weight: 600;
   letter-spacing: 0.22em;
   text-transform: uppercase;
@@ -311,17 +334,17 @@ body:has(.app-bg.feedback-bad) .flashcard {
 .app-title {
   margin: 0.45rem 0 0;
   font-family: var(--font-app);
-  font-size: clamp(1.95rem, 7.8vw, 2.55rem);
-  font-weight: 700;
-  line-height: 1.05;
-  letter-spacing: -0.02em;
+  font-size: clamp(2.55rem, 10vw, 3.35rem);
+  font-weight: 800;
+  line-height: 1.02;
+  letter-spacing: -0.04em;
 }
 
 .lesson-grid {
   display: flex;
   flex: 1;
   flex-direction: column;
-  gap: 0.9rem;
+  gap: 1.3rem;
   justify-content: flex-start;
   min-height: 0;
   overflow: hidden;
@@ -332,9 +355,9 @@ body:has(.app-bg.feedback-bad) .flashcard {
   display: flex;
   flex: 0 0 auto;
   align-items: stretch;
-  min-height: 5rem;
-  max-height: 6.25rem;
-  padding: 1rem 1.15rem;
+  min-height: 6.75rem;
+  max-height: 8rem;
+  padding: 1.4rem 1.55rem;
   overflow: hidden;
   border: 1px solid rgba(255, 236, 214, 0.16);
   border-radius: 1.6rem;
@@ -383,12 +406,12 @@ body:has(.app-bg.feedback-bad) .flashcard {
 .lesson-card-title {
   margin: 0;
   font-family: var(--font-app);
-  font-size: clamp(1.22rem, 5.2vw, 1.5rem);
+  font-size: clamp(1.58rem, 6.6vw, 1.95rem);
   font-weight: 700;
-  line-height: 1.12;
+  line-height: 1.1;
   color: #fff;
   text-wrap: balance;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.03em;
 }
 
 .lesson-card-badge {
@@ -396,12 +419,12 @@ body:has(.app-bg.feedback-bad) .flashcard {
   flex: 0 0 auto;
   align-items: center;
   justify-content: center;
-  min-height: 1.9rem;
-  padding: 0.35rem 0.8rem;
+  min-height: 2.4rem;
+  padding: 0.5rem 1.05rem;
   border-radius: 999px;
   background: rgba(0, 0, 0, 0.18);
   font-family: var(--font-app);
-  font-size: 0.88rem;
+  font-size: 1.08rem;
   font-weight: 600;
   color: rgba(255, 255, 255, 0.88);
   backdrop-filter: blur(8px);
@@ -423,8 +446,8 @@ body:has(.app-bg.feedback-bad) .flashcard {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 2.75rem;
-  height: 2.75rem;
+  width: 3.75rem;
+  height: 3.75rem;
   border-radius: 999px;
   background: var(--surface);
   border: 1px solid var(--border);
@@ -436,7 +459,7 @@ body:has(.app-bg.feedback-bad) .flashcard {
 }
 
 .lesson-progress {
-  height: 0.45rem;
+  height: 0.65rem;
   overflow: hidden;
   border-radius: 999px;
   background: rgba(255, 244, 232, 0.1);
@@ -454,7 +477,7 @@ body:has(.app-bg.feedback-bad) .flashcard {
   margin: 0;
   min-width: 3.5rem;
   font-family: var(--font-app);
-  font-size: 0.86rem;
+  font-size: 1.12rem;
   font-weight: 600;
   color: var(--text-muted);
   text-align: right;
@@ -464,7 +487,7 @@ body:has(.app-bg.feedback-bad) .flashcard {
   display: flex;
   flex: 1;
   min-height: 0;
-  padding: 1.25rem;
+  padding: 1.7rem;
   overflow: hidden;
   border-radius: 1.85rem;
   border: 1px solid rgba(255, 236, 214, 0.16);
@@ -502,15 +525,18 @@ body:has(.app-bg.feedback-bad) .flashcard {
   overflow: hidden;
   transform-origin: center center;
   font-family: var(--font-app);
-  font-size: clamp(1.5rem, 6.4vw, 2.6rem);
+  font-size: clamp(1.95rem, 8.2vw, 3.35rem);
   font-weight: 600;
-  line-height: 1.2;
+  line-height: 1.18;
+  letter-spacing: -0.025em;
   text-wrap: balance;
   word-break: break-word;
 }
 
 .card-content .katex {
   font-size: 1em;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 .answer-panel {
@@ -518,22 +544,22 @@ body:has(.app-bg.feedback-bad) .flashcard {
   align-items: center;
   justify-content: center;
   flex: 0 0 auto;
-  min-height: 3.95rem;
-  padding-top: 0.2rem;
+  min-height: var(--answer-btn-height);
+  padding-top: 0.35rem;
 }
 
 .answer-hint {
   margin: 0;
   width: 100%;
-  min-height: 3.95rem;
+  min-height: var(--answer-btn-height);
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 1.2rem;
+  border-radius: var(--radius-button);
   border: 1px dashed rgba(255, 236, 214, 0.2);
   background: rgba(255, 244, 232, 0.04);
   font-family: var(--font-app);
-  font-size: 0.9rem;
+  font-size: 1.15rem;
   font-weight: 600;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -543,24 +569,26 @@ body:has(.app-bg.feedback-bad) .flashcard {
 .answer-buttons {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 0.9rem;
+  gap: 1.25rem;
   width: 100%;
 }
 
 .answer-btn {
   display: inline-flex;
+  width: 100%;
+  min-height: var(--answer-btn-height);
   align-items: center;
   justify-content: center;
-  gap: 0.6rem;
-  min-height: 3.95rem;
-  padding: 0.95rem 1.1rem;
-  border-radius: 1.25rem;
-  font-family: var(--font-app);
-  font-size: 1.12rem;
-  font-weight: 700;
+  padding: 0;
+  border-radius: var(--radius-button);
   color: #fff;
   box-shadow: 0 14px 30px rgba(0, 0, 0, 0.22);
   transition: transform 120ms ease, filter 120ms ease;
+}
+
+.answer-btn i {
+  font-size: clamp(2.4rem, 9vw, 3.2rem);
+  line-height: 1;
 }
 
 .answer-btn:active {
@@ -590,7 +618,7 @@ body:has(.app-bg.feedback-bad) .flashcard {
   width: 100%;
   max-width: 26rem;
   min-height: 0;
-  padding: 1.55rem 1.3rem;
+  padding: 1.95rem 1.6rem;
   border-radius: 1.85rem;
   border: 1px solid var(--border);
   background: linear-gradient(160deg, rgba(255, 244, 232, 0.1), rgba(255, 236, 214, 0.04));
@@ -601,16 +629,16 @@ body:has(.app-bg.feedback-bad) .flashcard {
 .summary-title {
   margin: 0.55rem 0 0;
   font-family: var(--font-app);
-  font-size: clamp(1.72rem, 6.6vw, 2.2rem);
-  font-weight: 700;
-  line-height: 1.1;
-  letter-spacing: -0.02em;
+  font-size: clamp(2.05rem, 7.8vw, 2.6rem);
+  font-weight: 800;
+  line-height: 1.06;
+  letter-spacing: -0.035em;
 }
 
 .summary-copy {
   margin: 0.7rem 0 1.15rem;
   font-family: var(--font-app);
-  font-size: 1rem;
+  font-size: 1.2rem;
   line-height: 1.45;
   color: var(--text-muted);
 }
@@ -618,7 +646,7 @@ body:has(.app-bg.feedback-bad) .flashcard {
 .summary-stats {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.8rem;
+  gap: 1.05rem;
   margin-bottom: 1.15rem;
 }
 
@@ -643,7 +671,7 @@ body:has(.app-bg.feedback-bad) .flashcard {
   display: block;
   margin-top: 0.4rem;
   font-family: var(--font-app);
-  font-size: 1.72rem;
+  font-size: 2.05rem;
   font-weight: 700;
   line-height: 1;
 }
@@ -658,12 +686,12 @@ body:has(.app-bg.feedback-bad) .flashcard {
 
 .primary-button {
   width: 100%;
-  min-height: 3.65rem;
+  min-height: 4.4rem;
   border-radius: 1.1rem;
   background: linear-gradient(135deg, var(--lesson-from), var(--lesson-to));
   color: #fff;
   font-family: var(--font-app);
-  font-size: 1.06rem;
+  font-size: 1.25rem;
   font-weight: 700;
   box-shadow: 0 16px 34px rgba(0, 0, 0, 0.24);
 }
@@ -763,11 +791,11 @@ body:has(.app-bg.feedback-bad) .flashcard {
   }
 
   .lesson-card {
-    min-height: 4.75rem;
-    max-height: 5.65rem;
+    min-height: 6.25rem;
+    max-height: 7.5rem;
   }
 
   .lesson-card-title {
-    font-size: 1.32rem;
+    font-size: 1.68rem;
   }
 }

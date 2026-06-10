@@ -417,12 +417,11 @@ function updateLessonProgress() {
   }
 
   const total = state.activeLesson.cards.length;
-  const mastered = state.stats.good;
-  const currentIndex = state.currentCard ? Math.min(total, mastered + 1) : Math.min(total, mastered);
-  const progress = total === 0 ? 0 : (currentIndex / total) * 100;
+  const completed = state.stats.good;
+  const progress = total === 0 ? 0 : (completed / total) * 100;
 
   elements.lessonProgressFill.style.width = `${progress}%`;
-  elements.lessonProgressLabel.textContent = `${currentIndex} / ${total}`;
+  elements.lessonProgressLabel.textContent = `${completed} / ${total}`;
 }
 
 function startLesson(lesson) {
