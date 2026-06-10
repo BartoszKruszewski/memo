@@ -1,35 +1,52 @@
-const DATA_DIRECTORY = 'data';
+import {
+  initFeedback,
+  playBadFeedback,
+  playCompleteFeedback,
+  playGoodFeedback,
+  playRevealFeedback,
+  playTapFeedback
+} from './feedback.js';
 
-const embeddedLessons = {
-  'data/integrals.json': {
-    title: 'integrals.json',
-    cards: [
-      { key: '\\int x^n \\, dx', value: '\\frac{x^{n+1}}{n+1} + C' },
-      { key: '\\int \\frac{1}{x} \\, dx', value: '\\ln|x| + C' },
-      { key: '\\int e^x \\, dx', value: 'e^x + C' },
-      { key: '\\int \\cos(x) \\, dx', value: '\\sin(x) + C' },
-      { key: '\\int \\sin(x) \\, dx', value: '-\\cos(x) + C' },
-      { key: '\\int a^x \\, dx', value: '\\frac{a^x}{\\ln(a)} + C' }
-    ]
-  },
-  'data/derivatives.json': {
-    title: 'derivatives.json',
-    cards: [
-      { key: '\\frac{d}{dx} x^n', value: 'n x^{n-1}' },
-      { key: '\\frac{d}{dx} \\ln|x|', value: '\\frac{1}{x}' },
-      { key: '\\frac{d}{dx} e^x', value: 'e^x' },
-      { key: '\\frac{d}{dx} a^x', value: 'a^x \\ln(a)' },
-      { key: '\\frac{d}{dx} \\sin x', value: '\\cos x' },
-      { key: '\\frac{d}{dx} \\cos x', value: '-\\sin x' },
-      { key: '\\frac{d}{dx} \\tan x', value: '\\sec^2 x' },
-      { key: '\\frac{d}{dx} \\arctan x', value: '\\frac{1}{1+x^2}' },
-      { key: '\\frac{d}{dx} \\sinh x', value: '\\cosh x' },
-      { key: '\\frac{d}{dx} \\cosh x', value: '\\sinh x' },
-      { key: '\\frac{d}{dx} \\arcsin x', value: '\\frac{1}{\\sqrt{1-x^2}}' },
-      { key: '\\frac{d}{dx} \\sqrt{x}', value: '\\frac{1}{2\\sqrt{x}}' }
-    ]
+const appBaseUrl = new URL('.', import.meta.url);
+
+const LESSON_THEMES = [
+  { id: 'violet', from: '#7c5cff', to: '#ff6bcb', glow: 'rgba(124, 92, 255, 0.38)' },
+  { id: 'ocean', from: '#2f9bff', to: '#22d3ee', glow: 'rgba(47, 155, 255, 0.34)' },
+  { id: 'sunset', from: '#ff8f43', to: '#ff4d8d', glow: 'rgba(255, 120, 80, 0.34)' },
+  { id: 'mint', from: '#2dd4bf', to: '#4ade80', glow: 'rgba(45, 212, 191, 0.32)' },
+  { id: 'berry', from: '#c084fc', to: '#6366f1', glow: 'rgba(192, 132, 252, 0.34)' },
+  { id: 'gold', from: '#fbbf24', to: '#f97316', glow: 'rgba(251, 191, 36, 0.3)' },
+  { id: 'rose', from: '#fb7185', to: '#f472b6', glow: 'rgba(251, 113, 133, 0.32)' },
+  { id: 'lime', from: '#a3e635', to: '#14b8a6', glow: 'rgba(163, 230, 53, 0.28)' }
+];
+
+function getDataUrl(fileName) {
+  return new URL(`data/${fileName}`, appBaseUrl).href;
+}
+
+function getLessonTheme(fileName) {
+  let hash = 0;
+
+  for (let index = 0; index < fileName.length; index += 1) {
+    hash = (hash + fileName.charCodeAt(index) * (index + 3)) % LESSON_THEMES.length;
   }
-};
+
+  return LESSON_THEMES[hash];
+}
+
+function applyLessonTheme(theme) {
+  document.body.dataset.lessonTheme = theme.id;
+  document.documentElement.style.setProperty('--lesson-from', theme.from);
+  document.documentElement.style.setProperty('--lesson-to', theme.to);
+  document.documentElement.style.setProperty('--lesson-glow', theme.glow);
+}
+
+function clearLessonTheme() {
+  delete document.body.dataset.lessonTheme;
+  document.documentElement.style.removeProperty('--lesson-from');
+  document.documentElement.style.removeProperty('--lesson-to');
+  document.documentElement.style.removeProperty('--lesson-glow');
+}
 
 const state = {
   lessons: [],
@@ -57,6 +74,7 @@ function bindElements() {
     cardButton: document.getElementById('cardButton'),
     cardContent: document.getElementById('cardContent'),
     answerPanel: document.getElementById('answerPanel'),
+    answerButtons: document.getElementById('answerButtons'),
     goodButton: document.getElementById('goodButton'),
     badButton: document.getElementById('badButton'),
     summaryTitle: document.getElementById('summaryTitle'),
@@ -66,30 +84,49 @@ function bindElements() {
     summaryGood: document.getElementById('summaryGood'),
     summaryBad: document.getElementById('summaryBad'),
     backButton: document.getElementById('backButton'),
+    exitLessonButton: document.getElementById('exitLessonButton'),
+    lessonProgressFill: document.getElementById('lessonProgressFill'),
+    lessonProgressLabel: document.getElementById('lessonProgressLabel'),
+    cardHint: document.getElementById('cardHint'),
     errorMessage: document.getElementById('errorMessage')
   };
 }
 
+const FEEDBACK_ANIMATION_MS = 500;
+
 let revealBackgroundTimer = null;
+let appBgElement = null;
+
+function getAppBgElement() {
+  if (!appBgElement) {
+    appBgElement = document.querySelector('.app-bg');
+  }
+
+  return appBgElement;
+}
 
 function clearRevealBackground() {
   if (revealBackgroundTimer) {
     window.clearTimeout(revealBackgroundTimer);
     revealBackgroundTimer = null;
   }
-  document.body.classList.remove('reveal-good', 'reveal-bad');
+
+  getAppBgElement()?.classList.remove('feedback-good', 'feedback-bad');
 }
 
 function setRevealBackground(isGood) {
-  document.body.classList.remove('reveal-good', 'reveal-bad');
-  document.body.classList.add(isGood ? 'reveal-good' : 'reveal-bad');
-  if (revealBackgroundTimer) {
-    window.clearTimeout(revealBackgroundTimer);
+  const appBg = getAppBgElement();
+  if (!appBg) {
+    return;
   }
+
+  clearRevealBackground();
+  appBg.classList.add(isGood ? 'feedback-good' : 'feedback-bad');
+
   revealBackgroundTimer = window.setTimeout(() => {
-    document.body.classList.remove('reveal-good', 'reveal-bad');
+    appBg.classList.remove('feedback-good', 'feedback-bad');
     revealBackgroundTimer = null;
-  }, 220);
+  }, FEEDBACK_ANIMATION_MS);
 }
 
 function escapeHtml(value) {
@@ -117,31 +154,137 @@ function shuffle(items) {
   return output;
 }
 
-function getTitle(filePath) {
-  const name = filePath.split('/').pop() || filePath;
-  return name.replace(/\.json$/i, '');
+function getLessonTitle(fileName) {
+  return fileName.replace(/\.json$/i, '');
 }
 
-function normalizeLesson(filePath, data) {
-  const source = data || embeddedLessons[filePath];
-  if (!Array.isArray(source?.cards)) {
+function getGitHubConfig() {
+  const owner = document.querySelector('meta[name="github-owner"]')?.content?.trim();
+  const repo = document.querySelector('meta[name="github-repo"]')?.content?.trim();
+
+  if (!owner || !repo) {
+    return null;
+  }
+
+  return { owner, repo };
+}
+
+function isGitHubPages() {
+  return window.location.hostname.endsWith('github.io');
+}
+
+function normalizeLesson(fileName, data) {
+  if (!data || typeof data !== 'object' || Array.isArray(data)) {
+    return null;
+  }
+
+  const cards = Object.entries(data).map(([key, value]) => ({
+    key: String(key),
+    value: String(value)
+  }));
+
+  if (cards.length === 0) {
     return null;
   }
 
   return {
-    filePath,
-    title: getTitle(filePath),
-    tone: filePath.includes('productivity') ? 'sky' : 'green',
-    cards: source.cards.map((card) => ({
-      key: card.key,
-      value: card.value
-    }))
+    filePath: `data/${fileName}`,
+    title: getLessonTitle(fileName),
+    theme: getLessonTheme(fileName),
+    cards
   };
 }
 
+async function discoverLessonFilesFromGitHub() {
+  const config = getGitHubConfig();
+  if (!config) {
+    throw new Error('GitHub Pages config is missing in index.html.');
+  }
+
+  const response = await fetch(`https://api.github.com/repos/${config.owner}/${config.repo}/contents/data`);
+  if (!response.ok) {
+    throw new Error('Could not list lesson files from GitHub.');
+  }
+
+  const files = await response.json();
+  if (!Array.isArray(files)) {
+    throw new Error('Could not read lesson files from GitHub.');
+  }
+
+  return files
+    .filter((file) => file.type === 'file' && file.name.endsWith('.json'))
+    .map((file) => file.name)
+    .sort((left, right) => left.localeCompare(right));
+}
+
+function parseLessonFilesFromListing(html) {
+  const documentFragment = new DOMParser().parseFromString(html, 'text/html');
+  const files = [...documentFragment.querySelectorAll('#files a.file, #files a[href$=".json"]')]
+    .map((link) => {
+      const title = link.getAttribute('title')?.trim();
+      if (title) {
+        return title;
+      }
+
+      const href = link.getAttribute('href') || '';
+      return href.split(/[/\\]/).pop() || '';
+    })
+    .filter((fileName) => fileName.endsWith('.json'));
+
+  return [...new Set(files)].sort((left, right) => left.localeCompare(right));
+}
+
+async function discoverLessonFilesFromDirectoryListing() {
+  const response = await fetch(new URL('data/', appBaseUrl));
+  if (!response.ok) {
+    throw new Error('Could not list lesson files from the data folder.');
+  }
+
+  const files = parseLessonFilesFromListing(await response.text());
+  if (files.length === 0) {
+    throw new Error('No lesson files were found in the data folder.');
+  }
+
+  return files;
+}
+
+async function discoverLessonFiles() {
+  if (isGitHubPages()) {
+    return discoverLessonFilesFromGitHub();
+  }
+
+  return discoverLessonFilesFromDirectoryListing();
+}
+
+async function loadLesson(fileName) {
+  const filePath = `data/${fileName}`;
+  const response = await fetch(getDataUrl(fileName));
+  if (!response.ok) {
+    throw new Error(`Could not load ${filePath}.`);
+  }
+
+  const data = await response.json();
+  const lesson = normalizeLesson(fileName, data);
+  if (!lesson) {
+    throw new Error(`${filePath} must be a JSON object of question-answer pairs.`);
+  }
+
+  return lesson;
+}
+
 async function init() {
-  const lessonFiles = Object.keys(embeddedLessons).sort();
-  state.lessons = lessonFiles.map((filePath) => normalizeLesson(filePath)).filter(Boolean);
+  try {
+    const lessonFiles = await discoverLessonFiles();
+    const lessons = await Promise.all(lessonFiles.map((fileName) => loadLesson(fileName)));
+    state.lessons = lessons.sort((left, right) => left.title.localeCompare(right.title));
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Could not load lessons.';
+    elements.errorMessage.textContent = window.location.protocol === 'file:'
+      ? `${message} Run "npm start" and open http://localhost:3000 instead of opening the HTML file directly.`
+      : message;
+    showView('error');
+    return;
+  }
 
   if (state.lessons.length === 0) {
     elements.errorMessage.textContent = 'No lesson files were found in the data folder.';
@@ -153,24 +296,46 @@ async function init() {
   showView('menu');
 }
 
+function fitCardContent() {
+  const target = elements.cardContent;
+  target.style.transform = 'scale(1)';
+
+  const parent = target.parentElement;
+  if (!parent) {
+    return;
+  }
+
+  const availableHeight = parent.clientHeight - 12;
+  const overflow = target.scrollHeight - availableHeight;
+
+  if (overflow > 0 && availableHeight > 0) {
+    const scale = Math.max(0.62, availableHeight / target.scrollHeight);
+    target.style.transform = `scale(${scale})`;
+  }
+}
+
 function renderLatex(value) {
   const target = elements.cardContent;
   target.classList.remove('lesson-card-content');
+  target.style.transform = 'scale(1)';
   void target.offsetWidth;
   target.classList.add('lesson-card-content');
 
   if (!value) {
     target.textContent = '';
+    requestAnimationFrame(fitCardContent);
     return;
   }
 
   if (value.includes('$') || value.includes('\\(') || value.includes('\\[')) {
     renderMixedContent(target, value);
+    requestAnimationFrame(fitCardContent);
     return;
   }
 
   if (shouldRenderPlainText(value)) {
     target.textContent = value;
+    requestAnimationFrame(fitCardContent);
     return;
   }
 
@@ -182,6 +347,8 @@ function renderLatex(value) {
   } catch {
     target.textContent = value;
   }
+
+  requestAnimationFrame(fitCardContent);
 }
 
 function renderMixedContent(target, value) {
@@ -238,33 +405,69 @@ function pulseAnswerButtons() {
   });
 }
 
+function showAnswerHint() {
+  elements.cardHint.classList.remove('hidden');
+  elements.answerButtons.classList.add('hidden');
+  elements.answerPanel.classList.remove('reveal-in');
+}
+
+function showAnswerButtons() {
+  elements.cardHint.classList.add('hidden');
+  elements.answerButtons.classList.remove('hidden');
+  elements.answerPanel.classList.remove('reveal-in');
+  void elements.answerPanel.offsetWidth;
+  elements.answerPanel.classList.add('reveal-in');
+  pulseAnswerButtons();
+}
+
 function renderMenu() {
   elements.lessonGrid.innerHTML = '';
 
   state.lessons.forEach((lesson) => {
     const button = document.createElement('button');
     button.type = 'button';
-    button.className = 'group min-h-44 rounded-[1.75rem] border border-white/5 px-6 py-7 text-left transition hover:scale-[1.01] hover:border-white/15 sm:min-h-52';
-    button.classList.add(lesson.tone === 'sky' ? 'lesson-card-sky' : 'lesson-card-green');
+    button.className = 'lesson-card lesson-card-content';
+    button.style.setProperty('--card-from', lesson.theme.from);
+    button.style.setProperty('--card-to', lesson.theme.to);
     button.innerHTML = `
-      <div class="lesson-card-content flex h-full flex-col items-center justify-center gap-4 text-center">
-        <span class="break-words text-center text-2xl font-medium leading-tight text-white sm:text-3xl">${escapeHtml(lesson.title)}</span>
-        <span class="inline-flex w-fit rounded-full bg-white/10 px-3 py-1 text-sm font-semibold text-white/70">${lesson.cards.length} cards</span>
+      <div class="lesson-card-inner">
+        <h2 class="lesson-card-title">${escapeHtml(lesson.title)}</h2>
+        <span class="lesson-card-badge">${lesson.cards.length} cards</span>
       </div>
     `;
-    button.addEventListener('click', () => startLesson(lesson));
+    button.addEventListener('click', () => {
+      playTapFeedback();
+      startLesson(lesson);
+    });
     elements.lessonGrid.appendChild(button);
   });
 }
 
+function updateLessonProgress() {
+  if (!state.activeLesson) {
+    return;
+  }
+
+  const total = state.activeLesson.cards.length;
+  const mastered = state.stats.good;
+  const currentIndex = state.currentCard ? Math.min(total, mastered + 1) : Math.min(total, mastered);
+  const progress = total === 0 ? 0 : (currentIndex / total) * 100;
+
+  elements.lessonProgressFill.style.width = `${progress}%`;
+  elements.lessonProgressLabel.textContent = `${currentIndex} / ${total}`;
+}
+
 function startLesson(lesson) {
   clearRevealBackground();
+  applyLessonTheme(lesson.theme);
   state.activeLesson = lesson;
   state.queue = shuffle(lesson.cards);
   state.wrongQueue = [];
   state.currentCard = null;
   state.revealed = false;
   state.stats = { good: 0, bad: 0, rounds: 1 };
+  elements.cardButton.classList.remove('is-revealed');
+  showAnswerHint();
   showView('lesson');
   nextCard();
 }
@@ -285,8 +488,9 @@ function nextCard() {
 
   state.currentCard = state.queue.shift();
   state.revealed = false;
-  elements.cardButton.classList.remove('card-revealed');
-  elements.answerPanel.classList.add('hidden');
+  elements.cardButton.classList.remove('is-revealed');
+  showAnswerHint();
+  updateLessonProgress();
   renderLatex(state.currentCard.key);
 }
 
@@ -296,12 +500,10 @@ function revealCard() {
   }
 
   state.revealed = true;
+  elements.cardButton.classList.add('is-revealed');
+  playRevealFeedback();
   renderLatex(state.currentCard.value);
-  elements.answerPanel.classList.remove('hidden');
-  elements.answerPanel.classList.remove('reveal-in');
-  void elements.answerPanel.offsetWidth;
-  elements.answerPanel.classList.add('reveal-in');
-  pulseAnswerButtons();
+  showAnswerButtons();
 }
 
 function answer(isGood) {
@@ -312,25 +514,30 @@ function answer(isGood) {
 
   if (isGood) {
     state.stats.good += 1;
+    playGoodFeedback();
   } else {
     state.stats.bad += 1;
     state.wrongQueue.push(state.currentCard);
+    playBadFeedback();
   }
 
+  setRevealBackground(isGood);
   state.currentCard = null;
   state.revealed = false;
-  elements.cardButton.classList.remove('card-revealed');
+  elements.cardButton.classList.remove('is-revealed');
   nextCard();
 }
 
 function finishLesson() {
   const total = state.activeLesson.cards.length;
+  applyLessonTheme(state.activeLesson.theme);
   elements.summaryTitle.textContent = state.activeLesson.title;
   elements.summaryCopy.textContent = `Cards: ${total} | Rounds: ${state.stats.rounds}`;
   elements.summaryCards.textContent = String(total);
   elements.summaryRounds.textContent = String(state.stats.rounds);
   elements.summaryGood.textContent = String(state.stats.good);
   elements.summaryBad.textContent = String(state.stats.bad);
+  playCompleteFeedback();
   showView('summary');
 
   // Animate summary pieces with a small stagger
@@ -359,23 +566,31 @@ function finishLesson() {
 
 function backToMenu() {
   clearRevealBackground();
+  clearLessonTheme();
   state.activeLesson = null;
   state.queue = [];
   state.wrongQueue = [];
   state.currentCard = null;
   state.revealed = false;
-  elements.cardButton.classList.remove('card-revealed');
+  elements.cardButton.classList.remove('is-revealed');
+  showAnswerHint();
   showView('menu');
 }
 
-// `loadLesson` and network-based discovery removed — using embeddedLessons only
-
 document.addEventListener('DOMContentLoaded', () => {
+  initFeedback();
   bindElements();
 
   if (!elements.cardButton) return;
 
   elements.cardButton.addEventListener('click', revealCard);
+  elements.answerPanel.addEventListener('click', (event) => {
+    if (state.revealed || event.target.closest('#answerButtons')) {
+      return;
+    }
+
+    revealCard();
+  });
   elements.cardButton.addEventListener('keydown', (event) => {
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault();
@@ -400,6 +615,12 @@ document.addEventListener('DOMContentLoaded', () => {
   if (elements.backButton) {
     elements.backButton.addEventListener('click', backToMenu);
   }
+
+  if (elements.exitLessonButton) {
+    elements.exitLessonButton.addEventListener('click', backToMenu);
+  }
+
+  window.addEventListener('resize', fitCardContent);
 
   init();
 });

@@ -2,86 +2,114 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no"
+    />
     <meta name="description" content="Minimal dark flashcard app powered by JSON lessons." />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="theme-color" content="#1a1410" />
+    <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="./favicon.svg" />
+    <meta name="github-owner" content="BartoszKruszewski" />
+    <meta name="github-repo" content="memo" />
     <title>Memo Garden</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-      tailwind.config = {
-        theme: {
-          extend: {
-            fontFamily: {
-              body: ['Consolas', 'monospace']
-            }
-          }
-        }
-      };
-    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700;12..96,800&display=swap"
+      rel="stylesheet"
+    />
     <link href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" rel="stylesheet" />
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet" />
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
-    <script defer src="app.js"></script>
-    <link rel="stylesheet" href="styles.css" />
+    <script type="module" src="./app.js"></script>
+    <link rel="stylesheet" href="./styles.css" />
   </head>
-  <body class="min-h-screen font-body">
-    <main class="mx-auto flex min-h-screen max-w-6xl items-center justify-center p-2 sm:p-4 md:p-6">
-      <section id="menuView" class="w-full">
-        <div id="lessonGrid" class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3"></div>
+  <body>
+    <div class="app-bg" aria-hidden="true">
+      <div class="app-bg__base"></div>
+      <div class="app-bg__pulse"></div>
+      <div class="app-bg__wash"></div>
+    </div>
+
+    <main class="app-shell">
+      <section id="menuView" class="view view-menu">
+        <header class="app-header">
+          <p class="app-eyebrow">Flashcards</p>
+          <h1 class="app-title">Memo Garden</h1>
+        </header>
+        <div id="lessonGrid" class="lesson-grid"></div>
       </section>
 
-      <section id="lessonView" class="hidden w-full max-w-4xl">
-        <div id="cardButton" role="button" tabindex="0" class="mx-auto flex min-h-[72vh] w-full cursor-pointer items-stretch rounded-none border-0 bg-transparent p-0 text-center shadow-none transition hover:scale-[1.005] focus:outline-none sm:rounded-[2rem] sm:border sm:border-white/10 sm:bg-white/5 sm:p-6 sm:shadow-[0_30px_120px_rgba(0,0,0,0.45)]">
-          <div class="flex w-full flex-col items-center justify-center gap-6 text-center">
-            <span id="cardContent" class="mx-auto w-full max-w-3xl text-balance text-3xl font-medium leading-tight text-white sm:text-5xl"></span>
-            <div id="answerPanel" class="hidden w-full">
-              <div class="mx-auto flex w-full max-w-[18rem] flex-col gap-5 sm:max-w-none sm:flex-row sm:gap-3">
-                <button id="goodButton" type="button" class="flex-1 min-h-[4.75rem] rounded-2xl bg-gradient-to-r from-emerald-400 to-emerald-500 px-5 py-6 text-xl font-semibold text-white transition hover:from-emerald-300 hover:to-emerald-400 sm:min-h-[5.5rem] sm:py-7 sm:text-2xl">
-                  <span class="inline-flex items-center justify-center gap-2"><i class="fa-solid fa-check"></i><span>GOOD</span></span>
-                </button>
-                <button id="badButton" type="button" class="flex-1 min-h-[4.75rem] rounded-2xl bg-gradient-to-r from-amber-400 to-orange-500 px-5 py-6 text-xl font-semibold text-white transition hover:from-amber-300 hover:to-orange-400 sm:min-h-[5.5rem] sm:py-7 sm:text-2xl">
-                  <span class="inline-flex items-center justify-center gap-2"><i class="fa-solid fa-xmark"></i><span>BAD</span></span>
-                </button>
-              </div>
-            </div>
+      <section id="lessonView" class="view view-lesson hidden">
+        <div class="lesson-top">
+          <button id="exitLessonButton" type="button" class="icon-button" aria-label="Back to menu">
+            <i class="fa-solid fa-arrow-left"></i>
+          </button>
+          <div class="lesson-progress" aria-hidden="true">
+            <div id="lessonProgressFill" class="lesson-progress-fill"></div>
+          </div>
+          <p id="lessonProgressLabel" class="lesson-progress-label">1 / 1</p>
+        </div>
+
+        <div id="cardButton" class="flashcard" role="button" tabindex="0" aria-label="Tap to reveal answer">
+          <div class="flashcard-inner">
+            <div id="cardContent" class="card-content"></div>
+          </div>
+        </div>
+
+        <div id="answerPanel" class="answer-panel">
+          <p id="cardHint" class="answer-hint">Tap to reveal</p>
+          <div id="answerButtons" class="answer-buttons hidden">
+            <button id="goodButton" type="button" class="answer-btn answer-btn-good">
+              <i class="fa-solid fa-check" aria-hidden="true"></i>
+              <span>Good</span>
+            </button>
+            <button id="badButton" type="button" class="answer-btn answer-btn-bad">
+              <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+              <span>Bad</span>
+            </button>
           </div>
         </div>
       </section>
 
-      <section id="summaryView" class="hidden w-full max-w-3xl text-center">
-        <div class="space-y-6 rounded-none border-0 bg-transparent p-0 shadow-none sm:rounded-[2rem] sm:border sm:border-emerald-400/10 sm:bg-white/5 sm:p-8 sm:shadow-[0_30px_120px_rgba(0,0,0,0.45)]">
-          <div>
-            <h1 id="summaryTitle" class="text-3xl font-medium text-white sm:text-4xl"></h1>
-            <p id="summaryCopy" class="mt-3 text-sm leading-6 text-white/65"></p>
+      <section id="summaryView" class="view view-summary hidden">
+        <div class="summary-card">
+          <p class="summary-eyebrow">Lesson complete</p>
+          <h2 id="summaryTitle" class="summary-title"></h2>
+          <p id="summaryCopy" class="summary-copy"></p>
+
+          <div class="summary-stats">
+            <div class="summary-stat">
+              <span class="summary-stat-label">Cards</span>
+              <strong id="summaryCards" class="summary-stat-value"></strong>
+            </div>
+            <div class="summary-stat">
+              <span class="summary-stat-label">Rounds</span>
+              <strong id="summaryRounds" class="summary-stat-value"></strong>
+            </div>
+            <div class="summary-stat">
+              <span class="summary-stat-label">Good</span>
+              <strong id="summaryGood" class="summary-stat-value summary-stat-good"></strong>
+            </div>
+            <div class="summary-stat">
+              <span class="summary-stat-label">Bad</span>
+              <strong id="summaryBad" class="summary-stat-value summary-stat-bad"></strong>
+            </div>
           </div>
-          <div class="grid gap-3 sm:grid-cols-4">
-            <div class="rounded-2xl bg-gradient-to-br from-emerald-400/10 to-white/5 p-4 text-left">
-              <p class="text-[10px] uppercase tracking-[0.28em] text-white/45">Cards</p>
-              <p id="summaryCards" class="mt-2 text-2xl font-semibold text-white"></p>
-            </div>
-            <div class="rounded-2xl bg-gradient-to-br from-sky-400/10 to-white/5 p-4 text-left">
-              <p class="text-[10px] uppercase tracking-[0.28em] text-white/45">Rounds</p>
-              <p id="summaryRounds" class="mt-2 text-2xl font-semibold text-white"></p>
-            </div>
-            <div class="rounded-2xl bg-gradient-to-br from-emerald-400/10 to-white/5 p-4 text-left">
-              <p class="text-[10px] uppercase tracking-[0.28em] text-white/45">Good</p>
-              <p id="summaryGood" class="mt-2 text-2xl font-semibold text-white"></p>
-            </div>
-            <div class="rounded-2xl bg-gradient-to-br from-orange-400/10 to-white/5 p-4 text-left">
-              <p class="text-[10px] uppercase tracking-[0.28em] text-white/45">Bad</p>
-              <p id="summaryBad" class="mt-2 text-2xl font-semibold text-white"></p>
-            </div>
-          </div>
-          <div class="flex justify-center">
-            <button id="backButton" type="button" class="rounded-full bg-gradient-to-r from-emerald-300 to-sky-300 px-6 py-3 text-sm font-semibold text-slate-950 transition hover:from-emerald-200 hover:to-sky-200">Back to menu</button>
-          </div>
+
+          <button id="backButton" type="button" class="primary-button">Back to menu</button>
         </div>
       </section>
 
-      <section id="errorView" class="hidden w-full max-w-3xl rounded-[2rem] border border-rose-400/20 bg-rose-950/25 p-8 text-center text-rose-100">
-        <h2 class="text-2xl font-semibold">Could not load lessons</h2>
-        <p id="errorMessage" class="mt-3 text-sm text-rose-100/70"></p>
+      <section id="errorView" class="view view-error hidden">
+        <div class="error-card">
+          <h2 class="error-title">Could not load lessons</h2>
+          <p id="errorMessage" class="error-copy"></p>
+        </div>
       </section>
     </main>
   </body>
