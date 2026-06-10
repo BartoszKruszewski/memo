@@ -84,6 +84,10 @@ async function primeSilentAudio() {
   }
 }
 
+function getVolumeScale() {
+  return isIOS() ? 2.75 : 1;
+}
+
 function playTone({
   frequency,
   duration = 0.12,
@@ -102,6 +106,7 @@ function playTone({
     return;
   }
 
+  const scaledVolume = Math.min(volume * getVolumeScale(), 0.35);
   const startTime = context.currentTime + start;
   const endTime = startTime + duration;
   const oscillator = context.createOscillator();
@@ -115,7 +120,7 @@ function playTone({
   }
 
   gain.gain.setValueAtTime(0.0001, startTime);
-  gain.gain.exponentialRampToValueAtTime(volume, startTime + 0.012);
+  gain.gain.exponentialRampToValueAtTime(scaledVolume, startTime + 0.012);
   gain.gain.exponentialRampToValueAtTime(0.0001, endTime);
 
   oscillator.connect(gain);

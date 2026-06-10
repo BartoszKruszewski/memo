@@ -830,7 +830,7 @@ body:has(.app-bg.feedback-bad) .flashcard {
   }
 
   .app-shell {
-    width: min(100%, 24rem);
+    width: min(100%, 42rem);
     margin-inline: auto;
   }
 
@@ -867,73 +867,55 @@ body:has(.app-bg.feedback-bad) .flashcard {
   }
 
   .app-shell:has(.view-lesson:not(.hidden)) {
-    width: min(100%, 19.5rem);
-    padding:
-      calc(0.95rem + var(--safe-top))
-      calc(0.95rem + var(--safe-right))
-      calc(0.95rem + var(--safe-bottom))
-      calc(0.95rem + var(--safe-left));
+    width: min(100%, 48rem);
   }
 
   .view-lesson {
-    --answer-btn-height: clamp(3.6rem, 8vw, 4.2rem);
-    gap: 0.7rem;
+    --answer-btn-height: clamp(4.2rem, 7vh, 5.25rem);
+    gap: 0.85rem;
   }
 
   .view-lesson .lesson-top {
-    gap: 0.55rem;
+    gap: 0.75rem;
   }
 
   .view-lesson .icon-button {
-    width: 2.55rem;
-    height: 2.55rem;
-    font-size: 0.95rem;
+    width: 3rem;
+    height: 3rem;
+    font-size: 1rem;
   }
 
   .view-lesson .lesson-progress {
-    height: 0.48rem;
+    height: 0.55rem;
   }
 
   .view-lesson .lesson-progress-label {
-    min-width: 2.75rem;
-    font-size: 0.82rem;
+    min-width: 3.25rem;
+    font-size: 0.92rem;
   }
 
   .view-lesson .flashcard {
-    padding: 0.95rem;
-    border-radius: 1.15rem;
-    box-shadow:
-      0 16px 40px rgba(12, 8, 5, 0.28),
-      inset 0 1px 0 rgba(255, 244, 232, 0.1);
+    padding: 1.5rem 2rem;
+    border-radius: 1.5rem;
   }
 
   .view-lesson .card-content {
-    font-size: clamp(1.25rem, 2.8vw, 1.75rem);
-    line-height: 1.16;
-  }
-
-  .view-lesson .answer-panel {
-    min-height: var(--answer-btn-height);
-    padding-top: 0.15rem;
+    font-size: clamp(1.65rem, 2.4vw, 2.5rem);
+    line-height: 1.18;
   }
 
   .view-lesson .answer-hint {
-    min-height: var(--answer-btn-height);
-    font-size: 0.82rem;
-    letter-spacing: 0.1em;
+    font-size: 0.92rem;
   }
 
   .view-lesson .answer-buttons {
-    gap: 0.65rem;
-  }
-
-  .view-lesson .answer-btn {
-    min-height: var(--answer-btn-height);
-    box-shadow: 0 10px 22px rgba(0, 0, 0, 0.2);
+    gap: 1rem;
+    max-width: 28rem;
+    margin-inline: auto;
   }
 
   .view-lesson .answer-btn i {
-    font-size: clamp(1.45rem, 3vw, 1.7rem);
+    font-size: clamp(1.85rem, 2.8vw, 2.25rem);
   }
 
   .summary-card,
