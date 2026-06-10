@@ -8,6 +8,29 @@ import {
   unlockFeedback
 } from './feedback.js';
 
+function bindTap(element, handler) {
+  if (!element) {
+    return;
+  }
+
+  let lastTouchAt = 0;
+
+  element.addEventListener('touchend', (event) => {
+    lastTouchAt = Date.now();
+    event.preventDefault();
+    handler(event);
+  }, { passive: false });
+
+  element.addEventListener('click', (event) => {
+    if (Date.now() - lastTouchAt < 500) {
+      event.preventDefault();
+      return;
+    }
+
+    handler(event);
+  });
+}
+
 const LESSON_THEMES = [
   { id: 'violet', from: '#7c5cff', to: '#ff6bcb', glow: 'rgba(124, 92, 255, 0.38)' },
   { id: 'ocean', from: '#2f9bff', to: '#22d3ee', glow: 'rgba(47, 155, 255, 0.34)' },
@@ -404,8 +427,8 @@ function renderMenu() {
         <span class="lesson-card-badge">${lesson.cards.length} cards</span>
       </div>
     `;
-    button.addEventListener('click', async () => {
-      await unlockFeedback();
+    bindTap(button, () => {
+      void unlockFeedback();
       playTapFeedback();
       startLesson(lesson);
     });
@@ -463,12 +486,12 @@ function nextCard() {
   renderLatex(state.currentCard.key);
 }
 
-async function revealCard() {
+function revealCard() {
   if (!state.currentCard || state.revealed) {
     return;
   }
 
-  await unlockFeedback();
+  void unlockFeedback();
   state.revealed = true;
   elements.cardButton.classList.add('is-revealed');
   playRevealFeedback();
@@ -553,15 +576,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (!elements.cardButton) return;
 
-  const unlockOnGesture = () => {
-    void unlockFeedback();
-  };
-
-  elements.cardButton.addEventListener('touchend', unlockOnGesture, { passive: true });
-  elements.cardButton.addEventListener('click', () => {
-    void revealCard();
+  bindTap(elements.cardButton, () => {
+    revealCard();
   });
-  elements.answerPanel.addEventListener('click', (event) => {
+
+  bindTap(elements.answerPanel, (event) => {
     if (state.revealed || event.target.closest('#answerButtons')) {
       return;
     }
@@ -576,29 +595,27 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   if (elements.goodButton) {
-    elements.goodButton.addEventListener('touchend', unlockOnGesture, { passive: true });
-    elements.goodButton.addEventListener('click', async (event) => {
+    bindTap(elements.goodButton, (event) => {
       event.stopPropagation();
-      await unlockFeedback();
+      void unlockFeedback();
       answer(true);
     });
   }
 
   if (elements.badButton) {
-    elements.badButton.addEventListener('touchend', unlockOnGesture, { passive: true });
-    elements.badButton.addEventListener('click', async (event) => {
+    bindTap(elements.badButton, (event) => {
       event.stopPropagation();
-      await unlockFeedback();
+      void unlockFeedback();
       answer(false);
     });
   }
 
   if (elements.backButton) {
-    elements.backButton.addEventListener('click', backToMenu);
+    bindTap(elements.backButton, backToMenu);
   }
 
   if (elements.exitLessonButton) {
-    elements.exitLessonButton.addEventListener('click', backToMenu);
+    bindTap(elements.exitLessonButton, backToMenu);
   }
 
   window.addEventListener('resize', fitCardContent);

@@ -30,6 +30,19 @@
   pointer-events: none;
 }
 
+.ios-haptic-switch {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  opacity: 0.001;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  pointer-events: none;
+}
+
 .feedback-unlock {
   position: fixed;
   inset: 0;
@@ -38,8 +51,7 @@
   align-items: center;
   justify-content: center;
   padding: var(--space-shell);
-  background: rgba(10, 7, 5, 0.72);
-  backdrop-filter: blur(10px);
+  background: rgba(10, 7, 5, 0.88);
 }
 
 .feedback-unlock-card {
@@ -74,6 +86,7 @@
 html {
   color-scheme: dark;
   height: 100%;
+  background: var(--app-bg);
   -webkit-text-size-adjust: 100%;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -84,7 +97,6 @@ body {
   margin: 0;
   min-height: 100%;
   height: 100dvh;
-  overflow: hidden;
   overscroll-behavior: none;
   touch-action: manipulation;
   font-family: var(--font-app);
@@ -109,10 +121,14 @@ button {
 
 .app-bg {
   position: fixed;
-  inset: 0;
+  top: calc(-1 * var(--safe-top));
+  right: calc(-1 * var(--safe-right));
+  bottom: calc(-1 * var(--safe-bottom));
+  left: calc(-1 * var(--safe-left));
   z-index: 0;
   overflow: hidden;
   pointer-events: none;
+  transform: translateZ(0);
 }
 
 .app-bg__base,
@@ -124,6 +140,7 @@ button {
 
 .app-bg__base {
   background:
+    radial-gradient(ellipse 120% 80% at 50% 0%, rgba(251, 191, 36, 0.24), transparent 62%),
     radial-gradient(ellipse 90% 58% at 12% -6%, rgba(251, 191, 36, 0.2), transparent 56%),
     radial-gradient(ellipse 72% 52% at 96% 14%, rgba(234, 136, 96, 0.16), transparent 54%),
     radial-gradient(ellipse 78% 58% at 48% 112%, rgba(161, 98, 68, 0.18), transparent 58%),
@@ -333,9 +350,25 @@ body:has(.app-bg.feedback-bad) .flashcard {
     calc(var(--space-shell) + var(--safe-bottom))
     calc(var(--space-shell) + var(--safe-left));
   overflow: hidden;
+  transform: translateZ(0);
+}
+
+.app-shell::before {
+  content: '';
+  position: absolute;
+  top: calc(-1 * var(--safe-top));
+  right: calc(-1 * var(--safe-right));
+  left: calc(-1 * var(--safe-left));
+  height: calc(var(--safe-top) + 2.5rem);
+  background:
+    radial-gradient(ellipse 120% 100% at 50% 0%, rgba(251, 191, 36, 0.18), transparent 72%),
+    linear-gradient(180deg, rgba(31, 24, 20, 0.98) 0%, rgba(31, 24, 20, 0) 100%);
+  pointer-events: none;
 }
 
 .view {
+  position: relative;
+  z-index: 1;
   display: flex;
   flex: 1;
   flex-direction: column;
@@ -521,6 +554,9 @@ body:has(.app-bg.feedback-bad) .flashcard {
   min-height: 0;
   padding: 1.7rem;
   overflow: hidden;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transform: translateZ(0);
   border-radius: 1.85rem;
   border: 1px solid rgba(255, 236, 214, 0.16);
   background:

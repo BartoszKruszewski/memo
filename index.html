@@ -29,7 +29,10 @@
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
-    <audio id="silentUnlock" class="silent-unlock" playsinline webkit-playsinline preload="auto" src="data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQAYACAAZG1EYQAAAAAAAP//AAC4AAABAAEA"></audio>
+    <audio id="silentUnlock" class="silent-unlock" playsinline webkit-playsinline preload="auto" loop src="data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQAYACAAZG1EYQAAAAAAAP//AAC4AAABAAEA"></audio>
+    <label id="iosHapticSwitch" class="ios-haptic-switch" aria-hidden="true">
+      <input type="checkbox" switch />
+    </label>
     <div id="feedbackUnlockView" class="feedback-unlock hidden">
       <div class="feedback-unlock-card">
         <h2 class="feedback-unlock-title">Enable sound & haptics</h2>
