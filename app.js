@@ -7,8 +7,6 @@ import {
   playTapFeedback
 } from './feedback.js';
 
-const appBaseUrl = new URL('.', import.meta.url);
-
 const LESSON_THEMES = [
   { id: 'violet', from: '#7c5cff', to: '#ff6bcb', glow: 'rgba(124, 92, 255, 0.38)' },
   { id: 'ocean', from: '#2f9bff', to: '#22d3ee', glow: 'rgba(47, 155, 255, 0.34)' },
@@ -20,8 +18,37 @@ const LESSON_THEMES = [
   { id: 'lime', from: '#a3e635', to: '#14b8a6', glow: 'rgba(163, 230, 53, 0.28)' }
 ];
 
-function getDataUrl(fileName) {
-  return new URL(`data/${fileName}`, appBaseUrl).href;
+function getGitHubConfig() {
+  const owner = document.querySelector('meta[name="github-owner"]')?.content?.trim();
+  const repo = document.querySelector('meta[name="github-repo"]')?.content?.trim();
+
+  if (!owner || !repo) {
+    return null;
+  }
+
+  return { owner, repo };
+}
+
+function getSiteBaseUrl() {
+  const config = getGitHubConfig();
+
+  if (config && window.location.hostname.endsWith('github.io')) {
+    return `https://${config.owner}.github.io/${config.repo}/`;
+  }
+
+  return new URL('./', window.location.href).href;
+}
+
+function getLessonsManifestUrl() {
+  return new URL('lessons.json', getSiteBaseUrl()).href;
+}
+
+function getLessonFileName(lessonName) {
+  return `${lessonName.replace(/\.json$/i, '')}.json`;
+}
+
+function getLessonDataUrl(lessonName) {
+  return new URL(`data/${getLessonFileName(lessonName)}`, getSiteBaseUrl()).href;
 }
 
 function getLessonTheme(fileName) {
@@ -158,21 +185,6 @@ function getLessonTitle(fileName) {
   return fileName.replace(/\.json$/i, '');
 }
 
-function getGitHubConfig() {
-  const owner = document.querySelector('meta[name="github-owner"]')?.content?.trim();
-  const repo = document.querySelector('meta[name="github-repo"]')?.content?.trim();
-
-  if (!owner || !repo) {
-    return null;
-  }
-
-  return { owner, repo };
-}
-
-function isGitHubPages() {
-  return window.location.hostname.endsWith('github.io');
-}
-
 function normalizeLesson(fileName, data) {
   if (!data || typeof data !== 'object' || Array.isArray(data)) {
     return null;
@@ -195,70 +207,26 @@ function normalizeLesson(fileName, data) {
   };
 }
 
-async function discoverLessonFilesFromGitHub() {
-  const config = getGitHubConfig();
-  if (!config) {
-    throw new Error('GitHub Pages config is missing in index.html.');
-  }
-
-  const response = await fetch(`https://api.github.com/repos/${config.owner}/${config.repo}/contents/data`);
-  if (!response.ok) {
-    throw new Error('Could not list lesson files from GitHub.');
-  }
-
-  const files = await response.json();
-  if (!Array.isArray(files)) {
-    throw new Error('Could not read lesson files from GitHub.');
-  }
-
-  return files
-    .filter((file) => file.type === 'file' && file.name.endsWith('.json'))
-    .map((file) => file.name)
-    .sort((left, right) => left.localeCompare(right));
-}
-
-function parseLessonFilesFromListing(html) {
-  const documentFragment = new DOMParser().parseFromString(html, 'text/html');
-  const files = [...documentFragment.querySelectorAll('#files a.file, #files a[href$=".json"]')]
-    .map((link) => {
-      const title = link.getAttribute('title')?.trim();
-      if (title) {
-        return title;
-      }
-
-      const href = link.getAttribute('href') || '';
-      return href.split(/[/\\]/).pop() || '';
-    })
-    .filter((fileName) => fileName.endsWith('.json'));
-
-  return [...new Set(files)].sort((left, right) => left.localeCompare(right));
-}
-
-async function discoverLessonFilesFromDirectoryListing() {
-  const response = await fetch(new URL('data/', appBaseUrl));
-  if (!response.ok) {
-    throw new Error('Could not list lesson files from the data folder.');
-  }
-
-  const files = parseLessonFilesFromListing(await response.text());
-  if (files.length === 0) {
-    throw new Error('No lesson files were found in the data folder.');
-  }
-
-  return files;
-}
-
 async function discoverLessonFiles() {
-  if (isGitHubPages()) {
-    return discoverLessonFilesFromGitHub();
+  const response = await fetch(getLessonsManifestUrl());
+  if (!response.ok) {
+    throw new Error('Could not load lessons.json.');
   }
 
-  return discoverLessonFilesFromDirectoryListing();
+  const lessons = await response.json();
+  if (!Array.isArray(lessons)) {
+    throw new Error('lessons.json must be a JSON array of lesson names.');
+  }
+
+  return lessons
+    .filter((lessonName) => typeof lessonName === 'string' && lessonName.trim())
+    .map((lessonName) => getLessonFileName(lessonName.trim()))
+    .sort((left, right) => left.localeCompare(right));
 }
 
 async function loadLesson(fileName) {
   const filePath = `data/${fileName}`;
-  const response = await fetch(getDataUrl(fileName));
+  const response = await fetch(getLessonDataUrl(fileName));
   if (!response.ok) {
     throw new Error(`Could not load ${filePath}.`);
   }
@@ -287,7 +255,7 @@ async function init() {
   }
 
   if (state.lessons.length === 0) {
-    elements.errorMessage.textContent = 'No lesson files were found in the data folder.';
+    elements.errorMessage.textContent = 'No lessons were listed in lessons.json.';
     showView('error');
     return;
   }
