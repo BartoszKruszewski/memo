@@ -209,7 +209,46 @@ function getLessonTitle(fileName) {
   return fileName.replace(/\.json$/i, '');
 }
 
-function normalizeLesson(fileName, data) {
+const FONT_AWESOME_ICON_PATTERN = /^fa-(solid|regular|brands|light|thin|duotone)(\s+fa-[a-z0-9-]+)+$/;
+
+function sanitizeLessonIcon(icon) {
+  if (typeof icon !== 'string') {
+    return null;
+  }
+
+  const trimmed = icon.trim();
+  return FONT_AWESOME_ICON_PATTERN.test(trimmed) ? trimmed : null;
+}
+
+function parseLessonEntry(entry) {
+  if (typeof entry === 'string') {
+    const name = entry.trim();
+    if (!name) {
+      return null;
+    }
+
+    return {
+      fileName: getLessonFileName(name),
+      icon: null
+    };
+  }
+
+  if (!entry || typeof entry !== 'object' || Array.isArray(entry) || typeof entry.name !== 'string') {
+    return null;
+  }
+
+  const name = entry.name.trim();
+  if (!name) {
+    return null;
+  }
+
+  return {
+    fileName: getLessonFileName(name),
+    icon: sanitizeLessonIcon(entry.icon)
+  };
+}
+
+function normalizeLesson(fileName, data, icon = null) {
   if (!data || typeof data !== 'object' || Array.isArray(data)) {
     return null;
   }
@@ -226,12 +265,13 @@ function normalizeLesson(fileName, data) {
   return {
     filePath: `data/${fileName}`,
     title: getLessonTitle(fileName),
+    icon,
     theme: getLessonTheme(fileName),
     cards
   };
 }
 
-async function discoverLessonFiles() {
+async function discoverLessonEntries() {
   const response = await fetch(getLessonsManifestUrl());
   if (!response.ok) {
     throw new Error('Could not load lessons.json.');
@@ -239,16 +279,16 @@ async function discoverLessonFiles() {
 
   const lessons = await response.json();
   if (!Array.isArray(lessons)) {
-    throw new Error('lessons.json must be a JSON array of lesson names.');
+    throw new Error('lessons.json must be a JSON array of lesson names or lesson objects.');
   }
 
   return lessons
-    .filter((lessonName) => typeof lessonName === 'string' && lessonName.trim())
-    .map((lessonName) => getLessonFileName(lessonName.trim()))
-    .sort((left, right) => left.localeCompare(right));
+    .map((entry) => parseLessonEntry(entry))
+    .filter(Boolean)
+    .sort((left, right) => left.fileName.localeCompare(right.fileName));
 }
 
-async function loadLesson(fileName) {
+async function loadLesson(fileName, icon = null) {
   const filePath = `data/${fileName}`;
   const response = await fetch(getLessonDataUrl(fileName));
   if (!response.ok) {
@@ -256,7 +296,7 @@ async function loadLesson(fileName) {
   }
 
   const data = await response.json();
-  const lesson = normalizeLesson(fileName, data);
+  const lesson = normalizeLesson(fileName, data, icon);
   if (!lesson) {
     throw new Error(`${filePath} must be a JSON object of question-answer pairs.`);
   }
@@ -266,8 +306,10 @@ async function loadLesson(fileName) {
 
 async function init() {
   try {
-    const lessonFiles = await discoverLessonFiles();
-    const lessons = await Promise.all(lessonFiles.map((fileName) => loadLesson(fileName)));
+    const lessonEntries = await discoverLessonEntries();
+    const lessons = await Promise.all(
+      lessonEntries.map(({ fileName, icon }) => loadLesson(fileName, icon))
+    );
     state.lessons = lessons.sort((left, right) => left.title.localeCompare(right.title));
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Could not load lessons.';
@@ -421,9 +463,16 @@ function renderMenu() {
     button.className = 'lesson-card lesson-card-content';
     button.style.setProperty('--card-from', lesson.theme.from);
     button.style.setProperty('--card-to', lesson.theme.to);
+    const iconMarkup = lesson.icon
+      ? `<i class="${escapeHtml(lesson.icon)} lesson-card-icon" aria-hidden="true"></i>`
+      : '';
+
     button.innerHTML = `
       <div class="lesson-card-inner">
-        <h2 class="lesson-card-title">${escapeHtml(lesson.title)}</h2>
+        <h2 class="lesson-card-title">
+          ${iconMarkup}
+          <span class="lesson-card-title-text">${escapeHtml(lesson.title)}</span>
+        </h2>
         <span class="lesson-card-badge">${lesson.cards.length} cards</span>
       </div>
     `;

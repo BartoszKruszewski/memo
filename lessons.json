@@ -1,4 +1,10 @@
 [
-  "derivatives",
-  "integrals"
+  {
+    "name": "derivatives",
+    "icon": "fa-solid fa-square-root-variable"
+  },
+  {
+    "name": "integrals",
+    "icon": "fa-solid fa-infinity"
+  }
 ]

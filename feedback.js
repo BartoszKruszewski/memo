@@ -1,6 +1,5 @@
 let audioContext = null;
 let silentAudio = null;
-let iosHapticSwitch = null;
 let feedbackReady = false;
 let unlockInFlight = null;
 
@@ -135,23 +134,38 @@ function playTone({
   oscillator.stop(endTime + 0.03);
 }
 
-function triggerIOSHaptic(pulses = 1) {
-  if (!isIOS() || !iosHapticSwitch) {
-    return;
+function triggerIOSHapticPulse() {
+  const switchEl = document.createElement('input');
+  switchEl.type = 'checkbox';
+  switchEl.switch = true;
+  switchEl.style.position = 'fixed';
+  switchEl.style.opacity = '0';
+  switchEl.style.pointerEvents = 'none';
+  document.body.appendChild(switchEl);
+
+  try {
+    switchEl.click();
+  } catch {
+    // Ignore haptic failures on unsupported Safari versions.
   }
 
-  const input = iosHapticSwitch.querySelector('input');
-  if (!input) {
+  window.setTimeout(() => {
+    switchEl.remove();
+  }, 50);
+}
+
+function triggerIOSHaptic(pulses = 1) {
+  if (!isIOS()) {
     return;
   }
 
   for (let index = 0; index < pulses; index += 1) {
-    try {
-      input.checked = !input.checked;
-      iosHapticSwitch.click();
-    } catch {
-      // Ignore haptic failures on unsupported Safari versions.
+    if (index === 0) {
+      triggerIOSHapticPulse();
+      continue;
     }
+
+    window.setTimeout(triggerIOSHapticPulse, index * 60);
   }
 }
 
@@ -236,7 +250,6 @@ export async function unlockFeedback() {
 
 export function initFeedback() {
   silentAudio = document.getElementById('silentUnlock');
-  iosHapticSwitch = document.getElementById('iosHapticSwitch');
   feedbackReady = sessionStorage.getItem(FEEDBACK_READY_KEY) === '1';
 
   const unlockButton = document.getElementById('feedbackUnlockButton');
