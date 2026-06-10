@@ -4,7 +4,8 @@ import {
   playCompleteFeedback,
   playGoodFeedback,
   playRevealFeedback,
-  playTapFeedback
+  playTapFeedback,
+  unlockFeedback
 } from './feedback.js';
 
 const LESSON_THEMES = [
@@ -403,7 +404,8 @@ function renderMenu() {
         <span class="lesson-card-badge">${lesson.cards.length} cards</span>
       </div>
     `;
-    button.addEventListener('click', () => {
+    button.addEventListener('click', async () => {
+      await unlockFeedback();
       playTapFeedback();
       startLesson(lesson);
     });
@@ -461,11 +463,12 @@ function nextCard() {
   renderLatex(state.currentCard.key);
 }
 
-function revealCard() {
+async function revealCard() {
   if (!state.currentCard || state.revealed) {
     return;
   }
 
+  await unlockFeedback();
   state.revealed = true;
   elements.cardButton.classList.add('is-revealed');
   playRevealFeedback();
@@ -550,7 +553,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (!elements.cardButton) return;
 
-  elements.cardButton.addEventListener('click', revealCard);
+  const unlockOnGesture = () => {
+    void unlockFeedback();
+  };
+
+  elements.cardButton.addEventListener('touchend', unlockOnGesture, { passive: true });
+  elements.cardButton.addEventListener('click', () => {
+    void revealCard();
+  });
   elements.answerPanel.addEventListener('click', (event) => {
     if (state.revealed || event.target.closest('#answerButtons')) {
       return;
@@ -566,15 +576,19 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   if (elements.goodButton) {
-    elements.goodButton.addEventListener('click', (event) => {
+    elements.goodButton.addEventListener('touchend', unlockOnGesture, { passive: true });
+    elements.goodButton.addEventListener('click', async (event) => {
       event.stopPropagation();
+      await unlockFeedback();
       answer(true);
     });
   }
 
   if (elements.badButton) {
-    elements.badButton.addEventListener('click', (event) => {
+    elements.badButton.addEventListener('touchend', unlockOnGesture, { passive: true });
+    elements.badButton.addEventListener('click', async (event) => {
       event.stopPropagation();
+      await unlockFeedback();
       answer(false);
     });
   }

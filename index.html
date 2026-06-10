@@ -29,8 +29,14 @@
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
-    <label for="iosHaptic" id="iosHapticLabel" class="ios-haptic-switch" aria-hidden="true"></label>
-    <input type="checkbox" id="iosHaptic" class="ios-haptic-switch-input" aria-hidden="true" tabindex="-1" />
+    <audio id="silentUnlock" class="silent-unlock" playsinline webkit-playsinline preload="auto" src="data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQAYACAAZG1EYQAAAAAAAP//AAC4AAABAAEA"></audio>
+    <div id="feedbackUnlockView" class="feedback-unlock hidden">
+      <div class="feedback-unlock-card">
+        <h2 class="feedback-unlock-title">Enable sound & haptics</h2>
+        <p class="feedback-unlock-copy">Tap below so Memo Garden can play sounds and use iPhone feedback.</p>
+        <button id="feedbackUnlockButton" type="button" class="primary-button">Continue</button>
+      </div>
+    </div>
     <div class="app-bg" aria-hidden="true">
       <div class="app-bg__base"></div>
       <div class="app-bg__pulse"></div>

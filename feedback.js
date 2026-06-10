@@ -1,5 +1,9 @@
 let audioContext = null;
-let iosHapticLabel = null;
+let silentAudio = null;
+let feedbackReady = false;
+
+const FEEDBACK_READY_KEY = 'memoFeedbackReady';
+const SILENT_AUDIO_SRC = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQAYACAAZG1EYQAAAAAAAP//AAC4AAABAAEA';
 
 function isIOS() {
   return (
@@ -12,8 +16,14 @@ function canUseAudio() {
   return Boolean(window.AudioContext || window.webkitAudioContext);
 }
 
+function setPlaybackAudioSession() {
+  if (navigator.audioSession?.type !== undefined) {
+    navigator.audioSession.type = 'playback';
+  }
+}
+
 function primeAudioContext(context) {
-  if (context.__primed) {
+  if (!context || context.__primed) {
     return;
   }
 
@@ -36,11 +46,42 @@ function ensureAudioContext() {
   }
 
   if (audioContext.state === 'suspended') {
-    audioContext.resume();
+    void audioContext.resume();
   }
 
   primeAudioContext(audioContext);
   return audioContext;
+}
+
+function primeSilentAudioSync() {
+  if (!silentAudio) {
+    return;
+  }
+
+  silentAudio.muted = false;
+  silentAudio.volume = 1;
+  silentAudio.currentTime = 0;
+
+  const playPromise = silentAudio.play();
+  if (playPromise) {
+    void playPromise.catch(() => {});
+  }
+}
+
+async function primeSilentAudio() {
+  if (!silentAudio) {
+    return;
+  }
+
+  primeSilentAudioSync();
+
+  try {
+    await silentAudio.play();
+    silentAudio.pause();
+    silentAudio.currentTime = 0;
+  } catch {
+    // Ignore unlock failures here; Web Audio may still work after resume.
+  }
 }
 
 function playTone({
@@ -49,10 +90,15 @@ function playTone({
   type = 'sine',
   volume = 0.08,
   start = 0,
-  endFrequency = null
+  endFrequency = null,
+  force = false
 }) {
   const context = ensureAudioContext();
   if (!context) {
+    return;
+  }
+
+  if (!force && context.state === 'suspended') {
     return;
   }
 
@@ -79,12 +125,27 @@ function playTone({
 }
 
 function triggerIOSHaptic(pulses = 1) {
-  if (!iosHapticLabel) {
+  if (!isIOS()) {
     return;
   }
 
   for (let index = 0; index < pulses; index += 1) {
-    iosHapticLabel.click();
+    try {
+      const label = document.createElement('label');
+      label.setAttribute('aria-hidden', 'true');
+      label.style.cssText = 'position:fixed;left:-9999px;display:none;';
+
+      const input = document.createElement('input');
+      input.type = 'checkbox';
+      input.setAttribute('switch', '');
+
+      label.appendChild(input);
+      document.body.appendChild(label);
+      label.click();
+      document.body.removeChild(label);
+    } catch {
+      // Ignore haptic failures on unsupported Safari versions.
+    }
   }
 }
 
@@ -102,52 +163,123 @@ function vibrate(pattern) {
   triggerIOSHaptic(pulses);
 }
 
-export function initFeedback() {
-  iosHapticLabel = document.getElementById('iosHapticLabel');
+function hideFeedbackUnlock() {
+  document.getElementById('feedbackUnlockView')?.classList.add('hidden');
+}
 
-  const unlock = () => {
+function showFeedbackUnlock() {
+  document.getElementById('feedbackUnlockView')?.classList.remove('hidden');
+}
+
+export function needsFeedbackUnlock() {
+  if (!isIOS()) {
+    return false;
+  }
+
+  return !feedbackReady && sessionStorage.getItem(FEEDBACK_READY_KEY) !== '1';
+}
+
+export async function unlockFeedback() {
+  setPlaybackAudioSession();
+
+  const context = ensureAudioContext();
+  primeSilentAudioSync();
+  primeAudioContext(context);
+
+  if (context?.state === 'suspended') {
+    void context.resume();
+  }
+
+  playTone({ frequency: 420, duration: 0.04, volume: 0.03, force: true });
+  triggerIOSHaptic(1);
+
+  feedbackReady = true;
+  sessionStorage.setItem(FEEDBACK_READY_KEY, '1');
+  hideFeedbackUnlock();
+
+  if (context?.state === 'suspended') {
+    await context.resume();
+  }
+
+  await primeSilentAudio();
+}
+
+export function initFeedback() {
+  silentAudio = document.getElementById('silentUnlock');
+  feedbackReady = sessionStorage.getItem(FEEDBACK_READY_KEY) === '1';
+
+  const unlockButton = document.getElementById('feedbackUnlockButton');
+  if (unlockButton) {
+    unlockButton.addEventListener('click', () => {
+      void unlockFeedback();
+    });
+  }
+
+  if (needsFeedbackUnlock()) {
+    showFeedbackUnlock();
+  }
+
+  const unlockFromGesture = () => {
+    if (!feedbackReady && isIOS()) {
+      return;
+    }
+
     ensureAudioContext();
   };
 
-  document.addEventListener('touchstart', unlock, { capture: true, passive: true });
-  document.addEventListener('pointerdown', unlock, { capture: true, passive: true });
-  document.addEventListener('keydown', unlock);
+  document.addEventListener('touchend', unlockFromGesture, { capture: true, passive: true });
+  document.addEventListener('pointerup', unlockFromGesture, { capture: true, passive: true });
+}
+
+function runFeedback(play) {
+  if (isIOS() && !feedbackReady) {
+    showFeedbackUnlock();
+    return;
+  }
+
+  ensureAudioContext();
+  play();
 }
 
 export function playRevealFeedback() {
-  ensureAudioContext();
-  playTone({ frequency: 520, duration: 0.05, volume: 0.04 });
-  playTone({ frequency: 760, duration: 0.07, volume: 0.035, start: 0.03 });
-  vibrate(6);
+  runFeedback(() => {
+    playTone({ frequency: 520, duration: 0.05, volume: 0.04 });
+    playTone({ frequency: 760, duration: 0.07, volume: 0.035, start: 0.03 });
+    vibrate(6);
+  });
 }
 
 export function playGoodFeedback() {
-  ensureAudioContext();
-  playTone({ frequency: 523.25, duration: 0.11, volume: 0.075 });
-  playTone({ frequency: 659.25, duration: 0.13, volume: 0.08, start: 0.08 });
-  playTone({ frequency: 783.99, duration: 0.18, volume: 0.07, start: 0.17 });
-  vibrate([12, 35, 10]);
+  runFeedback(() => {
+    playTone({ frequency: 523.25, duration: 0.11, volume: 0.075 });
+    playTone({ frequency: 659.25, duration: 0.13, volume: 0.08, start: 0.08 });
+    playTone({ frequency: 783.99, duration: 0.18, volume: 0.07, start: 0.17 });
+    vibrate([12, 35, 10]);
+  });
 }
 
 export function playBadFeedback() {
-  ensureAudioContext();
-  playTone({ frequency: 196, duration: 0.09, type: 'square', volume: 0.048 });
-  playTone({ frequency: 164.81, duration: 0.11, type: 'square', volume: 0.054, start: 0.1 });
-  playTone({ frequency: 138.59, duration: 0.14, type: 'triangle', volume: 0.045, start: 0.2 });
-  vibrate([30, 45, 35, 45, 30]);
+  runFeedback(() => {
+    playTone({ frequency: 196, duration: 0.09, type: 'square', volume: 0.048 });
+    playTone({ frequency: 164.81, duration: 0.11, type: 'square', volume: 0.054, start: 0.1 });
+    playTone({ frequency: 138.59, duration: 0.14, type: 'triangle', volume: 0.045, start: 0.2 });
+    vibrate([30, 45, 35, 45, 30]);
+  });
 }
 
 export function playCompleteFeedback() {
-  ensureAudioContext();
-  playTone({ frequency: 523.25, duration: 0.1, volume: 0.065 });
-  playTone({ frequency: 659.25, duration: 0.1, volume: 0.07, start: 0.07 });
-  playTone({ frequency: 783.99, duration: 0.12, volume: 0.075, start: 0.14 });
-  playTone({ frequency: 1046.5, duration: 0.22, volume: 0.06, start: 0.22 });
-  vibrate([14, 40, 14, 40, 18]);
+  runFeedback(() => {
+    playTone({ frequency: 523.25, duration: 0.1, volume: 0.065 });
+    playTone({ frequency: 659.25, duration: 0.1, volume: 0.07, start: 0.07 });
+    playTone({ frequency: 783.99, duration: 0.12, volume: 0.075, start: 0.14 });
+    playTone({ frequency: 1046.5, duration: 0.22, volume: 0.06, start: 0.22 });
+    vibrate([14, 40, 14, 40, 18]);
+  });
 }
 
 export function playTapFeedback() {
-  ensureAudioContext();
-  playTone({ frequency: 420, duration: 0.04, volume: 0.03 });
-  vibrate(5);
+  runFeedback(() => {
+    playTone({ frequency: 420, duration: 0.04, volume: 0.03 });
+    vibrate(5);
+  });
 }
